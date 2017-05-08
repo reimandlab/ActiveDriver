@@ -245,6 +245,18 @@ merge_report = function(all_active_sites, all_active_regions, all_region_based_p
 }
 
 
+check_mutations = function(seqs_to_check, muts_to_check, genes_to_check) {
+  for (i in 1:length(muts_to_check)) {
+    if (muts_to_check$gene[i] %in% genes_to_check) {
+      seq_to_check <- seqs_to_check[muts_to_check$gene[i]]
+      position <- muts_to_check$position[i]
+      if (muts_to_check$wt_residue[i] == substring(seq_to_check, position, position)) {
+        return(TRUE)
+      }
+    }
+  }
+  FALSE
+}
 
 
 #' Identification of active protein sites (post-translational modification sites, signalling domains, etc) with specific and significant mutations. 
@@ -295,8 +307,14 @@ ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank=
 	genes_to_test = Reduce(intersect, list(mutations$gene, active_sites$gene, names(sequences), names(seq_disorder)))
 	if (length(genes_to_test)<1) { 
 		cat("Error: no genes matched in tables for mutations, active sites and sequences\n"); 
-		NULL
+		return(NULL)
 	}
+	# check if mutation wt residues match with reference sequences
+	if (check_mutations(sequences, mutations, genes_to_test) == FALSE) {
+	  cat("Error: wildtype residues do not match reference sequences\n")
+	  return(NULL)
+	}
+	
 	cat("genes:", length(genes_to_test))
 	gene_records = parallel::mclapply(genes_to_test, create_gene_record, 
 			sequences, mutations, active_sites, seq_disorder, flank=flank, mid_flank=mid_flank, 
