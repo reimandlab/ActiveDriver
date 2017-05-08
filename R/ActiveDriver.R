@@ -317,6 +317,12 @@ ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank=
 	mutations$position = as.numeric(mutations$position)
 	active_sites$position = as.numeric(active_sites$position)
 	
+	# ensure case is uniform
+	mutations$wt_residue = toupper(mutations$wt_residue)
+	mutations$mut_residue = toupper(mutations$mut_residue)
+	active_sites$residue = toupper(active_sites$residue)
+	sequences = toupper(sequences)
+	
 	genes_to_test = Reduce(intersect, list(mutations$gene, active_sites$gene, names(sequences), names(seq_disorder)))
 	if (length(genes_to_test)<1) { 
 		cat("Error: no genes matched in tables for mutations, active sites and sequences\n"); 
