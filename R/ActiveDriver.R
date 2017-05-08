@@ -245,16 +245,29 @@ merge_report = function(all_active_sites, all_active_regions, all_region_based_p
 }
 
 
-check_mutations = function(seqs_to_check, muts_to_check, genes_to_check) {
-  for (i in 1:length(muts_to_check)) {
-    if (muts_to_check$gene[i] %in% genes_to_check) {
+check_mutations_and_sites = function(seqs_to_check, muts_to_check, sites_to_check, genes_to_check) {
+  genes <- character()
+  for (i in 1:length(muts_to_check$gene)) {
+    if (muts_to_check$gene[i] %in% genes_to_check & !(muts_to_check$gene[i] %in% genes)) {
       seq_to_check <- seqs_to_check[muts_to_check$gene[i]]
       position <- muts_to_check$position[i]
       if (muts_to_check$wt_residue[i] == substring(seq_to_check, position, position)) {
+        genes <- append(genes, muts_to_check$gene[i])
+      }
+    }
+  }
+  
+  for (i in 1:length(sites_to_check$gene)) {
+    if (sites_to_check$gene[i] %in% genes) {
+      seq_to_check <- seqs_to_check[sites_to_check$gene[i]]
+      position <- sites_to_check$position[i]
+      length <- nchar(sites_to_check$residue[i])
+      if (sites_to_check$residue[i] == substring(seq_to_check, position, position + length - 1)) {
         return(TRUE)
       }
     }
   }
+  
   FALSE
 }
 
@@ -309,8 +322,8 @@ ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank=
 		cat("Error: no genes matched in tables for mutations, active sites and sequences\n"); 
 		return(NULL)
 	}
-	# check if mutation wt residues match with reference sequences
-	if (check_mutations(sequences, mutations, genes_to_test) == FALSE) {
+	# check if mutation and active site wt residues match with reference sequences
+	if (check_mutations_and_sites(sequences, mutations, active_sites, genes_to_test) == FALSE) {
 	  cat("Error: wildtype residues do not match reference sequences\n")
 	  return(NULL)
 	}
