@@ -113,9 +113,9 @@ count_flanking_active_sites_in_sequence = function(pos, active_sites, f1, f2) {
 
 glm1 = function(form, data, type="poisson") {
 	if (type=="nb") {
-		return(MASS::glm.nb(as.formula(form), data=data))
+		return(MASS::glm.nb(stats::as.formula(form), data=data))
 	} else {
-		return(glm(as.formula(form), family=poisson, data=data))
+		return(stats::glm(stats::as.formula(form), family=stats::poisson, data=data))
 	}
 }
 
@@ -137,23 +137,23 @@ assess_one_region = function(r, active_site_regions, mut_pos, active_site_pos, d
 		h1_scope = paste("n_muts~", paste(collapse="+", setdiff(colnames(dfr), c("n_muts"))))
 		h1 = NULL
 		if (type=="nb") {
-			h1 = try(MASS::stepAIC(MASS::glm.nb(n_muts~dis, data=dfr), trace=0, direction="forward", scope=as.formula(h1_scope)), T)
+			h1 = try(MASS::stepAIC(MASS::glm.nb(n_muts~dis, data=dfr), trace=0, direction="forward", scope=stats::as.formula(h1_scope)), T)
 		} else {
-			h1 = try(MASS::stepAIC(glm(n_muts~dis, data=dfr, family=poisson), trace=0, direction="forward", scope=as.formula(h1_scope)), T)
+			h1 = try(MASS::stepAIC(stats::glm(n_muts~dis, data=dfr, family=stats::poisson), trace=0, direction="forward", scope=stats::as.formula(h1_scope)), T)
 		}
 	}
 	if (any(c(class(h0)[[1]], class(h1)[[1]])=="try-error")) {	
 		return(data.frame(p=NA, low=NA, med=NA, high=NA, obs=NA, stringsAsFactors=FALSE))
 	}
-	p = anova(h0, h1, test="Chisq")[2, ifelse(type=="nb", "Pr(Chi)", "Pr(>Chi)")]
-	h0_predicted_lambdas = predict(h0, type="response")[rr]
+	p = stats::anova(h0, h1, test="Chisq")[2, ifelse(type=="nb", "Pr(Chi)", "Pr(>Chi)")]
+	h0_predicted_lambdas = stats::predict(h0, type="response")[rr]
 	if (type=="nb") {
 		exp_sampled = replicate(1000, sum(MASS::rnegbin(length(h0_predicted_lambdas), mu=h0_predicted_lambdas, theta=h0$theta), na.rm=T))
 	} else {
-		exp_sampled = replicate(1000, sum(rpois(n=length(h0_predicted_lambdas), lambda=h0_predicted_lambdas)))
+		exp_sampled = replicate(1000, sum(stats::rpois(n=length(h0_predicted_lambdas), lambda=h0_predicted_lambdas)))
 	}
 	exp_mean = mean(exp_sampled)
-	exp_sd = sd(exp_sampled)
+	exp_sd = stats::sd(exp_sampled)
 	res = data.frame(p, low=exp_mean-exp_sd, med=exp_mean, high=exp_mean+exp_sd, obs=sum(n_muts[rr]), stringsAsFactors=FALSE)
 	rm(h0,h1,dfr)
 	gc()
@@ -362,7 +362,7 @@ ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank 
 			if(!is.null(gr$total_mutation_significance[[1]])) 
 				data.frame(gene=gr$gene, gr$total_mutation_significance, stringsAsFactors=FALSE)))
 	if (!is.null(all_gene_based_fdr[[1]])) {
-		all_gene_based_fdr$fdr = p.adjust(all_gene_based_fdr$fdr, method="fdr")
+		all_gene_based_fdr$fdr = stats::p.adjust(all_gene_based_fdr$fdr, method="fdr")
 		# update fdr values in gene records
 		for (i in 1:nrow(all_gene_based_fdr)) {
 			gene_records[[as.character(all_gene_based_fdr[i, "gene"])]]$total_mutation_significance[,"fdr"] = all_gene_based_fdr[i,"fdr"]
