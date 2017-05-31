@@ -1,12 +1,10 @@
 Package: ActiveDriver
-Version: 0.0.10
+Version: 0.0.11
 License: GPL (>= 2)
 Description: A package for finding significantly mutated protein sites
     (phosphorylation sites, signalling domains, etc) from cancer genomics data.
 Title: ActiveDriver
-Author: Juri Reimand <juri.reimand@utoronto.ca>
-Maintainer: Juri Reimand <juri.reimand@utoronto.ca>
+Authors@R: person("Jüri", "Reimand", email = "juri.reimand@utoronto.ca", role = c("aut", "cre"))
 Depends: R (>= 3.0)
 Imports: parallel, MASS
 Collate: 'ActiveDriver.R'
-Packaged: 2015-04-06 16:21:20 UTC; reimand
