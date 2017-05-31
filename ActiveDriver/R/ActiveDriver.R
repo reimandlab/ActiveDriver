@@ -272,38 +272,55 @@ check_mutations_and_sites = function(seqs_to_check, muts_to_check, sites_to_chec
 }
 
 
-#' Identification of active protein sites (post-translational modification sites, signalling domains, etc) with specific and significant mutations. 
+#' Identification of active protein sites (post-translational modification sites, signalling domains, etc) with
+#'     specific and significant mutations. 
 #'
 #' @param sequences character vector of protein sequences, names are protein IDs.
-#' @param seq_disorder character vector of disorder in protein sequences, names are protein IDs and values are strings 1/0 for disordered/ordered protein residues.
+#' @param seq_disorder character vector of disorder in protein sequences, names are protein IDs and values are strings
+#'     1/0 for disordered/ordered protein residues.
 #' @param mutations data frame of mutations, with [gene, sample_id, position, wt_residue, mut_residue] as columns.
-#' @param active_sites data frame of active sites, with [gene, position, residue, kinase] as columns. Kinase field may be blank and is shown for informative purposes.
-#' @param flank numeric for selecting region size around active sites considered important for site activity. Default is value is 7. Ignored in case of simplified analysis.
-#' @param mid_flank numeric for splitting flanking region size into proximal (<=X) and distal (>X). Default is value is 2. Ignored in case of simplified analysis.
+#' @param active_sites data frame of active sites, with [gene, position, residue, kinase] as columns. Kinase field may
+#'     be blank and is shown for informative purposes.
+#' @param flank numeric for selecting region size around active sites considered important for site activity. Default
+#'     value is 7. Ignored in case of simplified analysis.
+#' @param mid_flank numeric for splitting flanking region size into proximal (<=X) and distal (>X). Default value is
+#'     2. Ignored in case of simplified analysis.
 #' @param mc.cores numeric for indicating number of computing cores dedicated to computation. Default value is 1.
-#' @param simplified true/false for selecting simplified analysis. Default value is FALSE. If TRUE, no flanking regions are considered and only indicated sites are tested for mutations. 
-#' @param return_records true/false for returning a collection of gene records with more data regarding sites and mutations. Default value is FALSE.
-#' @param skip_mismatch true/false for skipping mutations whose reference protein residue does not match expected residue from FASTA sequence file. 
+#' @param simplified true/false for selecting simplified analysis. Default value is FALSE. If TRUE, no flanking regions
+#'     are considered and only indicated sites are tested for mutations. 
+#' @param return_records true/false for returning a collection of gene records with more data regarding sites and
+#'     mutations. Default value is FALSE.
+#' @param skip_mismatch true/false for skipping mutations whose reference protein residue does not match expected
+#'     residue from FASTA sequence file. 
 #' @param regression_type 'nb' for negative binomial, 'poisson' for poisson GLM. The latter is default.
-#' @param enriched_only true/false to indicate whether only sites with enriched active site mutations will be included in the final p-value estimation (TRUE is default). If FALSE, sites with less than expected mutations will be also included.
+#' @param enriched_only true/false to indicate whether only sites with enriched active site mutations will be included
+#'     in the final p-value estimation (TRUE is default). If FALSE, sites with less than expected mutations will be also
+#'     included.
 #'
-#' @return list with the following components:
-#' 	@return all_active_mutations - table with mutations that hit or flank an active site. Additional columns of interest include Status (DI - direct active mutation; N1 - proximal flanking mutation; N2 - distal flanking mutation) and Active_region (region ID of active sites in that protein).
+#' @return list with the following components: 
+#' 	@return all_active_mutations - table with mutations that hit or flank an active site. Additional columns of
+#'      interest include Status (DI - direct active mutation; N1 - proximal flanking mutation; N2 - distal flanking
+#'      mutation) and Active_region (region ID of active sites in that protein).
 #'	@return all_active_sites - 
-#'	@return all_region_based_pval - p-values for regions of sites, statistics on observed mutations (obs) and expected mutations (exp, low, high based on mean and s.d. from Poisson sampling). The field Region identifies region in all_active_sites.
+#'	@return all_region_based_pval - p-values for regions of sites, statistics on observed mutations (obs) and expected
+#'      mutations (exp, low, high based on mean and s.d. from Poisson sampling). The field Region identifies region in
+#'      all_active_sites.
 #	@return all_gene_based_fdr - gene-based uncorrected and FDR-corrected p-values aggregated over multiple sites.
-#	@return gene_records - if return_records is TRUE, a list of gene-based records is returned (large size). 
-#' @references Systematic analysis of somatic mutations in phosphorylation signaling predicts novel cancer drivers (2013, Molecular Systems Biology) by Jüri Reimand and Gary Bader.
+#	@return gene_records - if return_records is TRUE, a list of gene-based records is returned (large size).
+#' @references Systematic analysis of somatic mutations in phosphorylation signaling predicts novel cancer drivers
+#'     (2013, Molecular Systems Biology) by Juri Reimand and Gary Bader.
 #' @author  Juri Reimand <juri.reimand@@utoronto.ca>
 #' @examples
 #' data(ActiveDriver_data)
 #' phos_results = ActiveDriver(sequences, sequence_disorder, mutations, phosphosites)
-#' phos_results_ovarian = ActiveDriver(sequences, sequence_disorder, mutations[grep("ovarian", mutations$sample_id),], phosphosites) 
-#' kinase_domain_results = ActiveDriver(sequences, sequence_disorder, mutations, kinase_domains, simplified=TRUE)
-#' kinase_domain_results_GBM = ActiveDriver(sequences, sequence_disorder, mutations[grep("glioblastoma", mutations$sample_id),], kinase_domains, simplified=TRUE) 
+#' ovarian_mutations = mutations[grep("ovarian", mutations$sample_id),]
+#' phos_results_ovarian = ActiveDriver(sequences, sequence_disorder, ovarian_mutations, phosphosites)
+#' kin_results = ActiveDriver(sequences, sequence_disorder, mutations, kinase_domains, simplified=TRUE)
+#' GBM_muts = mutations[grep("glioblastoma", mutations$sample_id),]
+#' kin_rslt_GBM = ActiveDriver(sequences, sequence_disorder, GBM_muts, kinase_domains, simplified=TRUE)
 #' @export
 
-ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank=7, mid_flank=2, mc.cores=1, simplified=FALSE, return_records=FALSE, skip_mismatch=TRUE, regression_type="poisson", enriched_only=TRUE) {
+ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank = 7, mid_flank = 2, mc.cores = 1, simplified = FALSE, return_records = FALSE, skip_mismatch = TRUE, regression_type = "poisson", enriched_only = TRUE) {
 	
 	# first initiate mutation counts if needed
 	if(is.null(mutations$count)) {mutations$count=1}
@@ -373,3 +390,80 @@ ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank=
 	results
 }
 
+
+#' Example protein sequences for ActiveDriver
+#'
+#' A dataset containing the sequences of four proteins.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name sequences
+#' @usage data(ActiveDriver_data)
+#' @format A named character vector with 4 elements
+NULL
+
+#' Example protein disorder for ActiveDriver
+#'
+#' A dataset containing the disorder of four proteins.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name sequence_disorder
+#' @usage data(ActiveDriver_data)
+#' @format A named character vector with 4 elements
+NULL
+
+#' Example mutations for ActiveDriver
+#'
+#' A dataset describing mutations. The variables are as follows:
+#'
+#' \itemize{
+#'   \item gene. the mutated gene
+#'   \item sample_id. the sample where the mutation originates
+#'   \item position. the position in the protein sequence where the mutation occurs
+#'   \item wt_residue. the wild-type residue
+#'   \item mut_residue. the mutant residue
+#' }
+#'
+#' @docType data
+#' @keywords datasets
+#' @name mutations
+#' @usage data(ActiveDriver_data)
+#' @format A data frame with 408 observations of 5 variables
+NULL
+
+#' Example phosphosites for ActiveDriver
+#'
+#' A dataset describing phosphosites. The variables are as follows:
+#'
+#' \itemize{
+#'   \item gene. the gene the phosphosite occurs in
+#'   \item position. the position in the protein sequence where the phosphosite occurs
+#'   \item residue. the phosphosite residue
+#'   \item kinase. the kinase that phosphorylated this site
+#' }
+#'
+#' @docType data
+#' @keywords datasets
+#' @name phosphosites
+#' @usage data(ActiveDriver_data)
+#' @format A data frame with 131 observations of 4 variables
+NULL
+
+#' Example kinase domains for ActiveDriver
+#'
+#' A dataset describing kinase domains. The variables are as follows:
+#'
+#' \itemize{
+#'   \item gene. the gene the kinase domain occurs in
+#'   \item position. the position in the protein sequence where the kinase domain begins
+#'   \item phos. TRUE
+#'   \item residue. the kinase domain residues
+#' }
+#'
+#' @docType data
+#' @keywords datasets
+#' @name kinase_domains
+#' @usage data(ActiveDriver_data)
+#' @format A data frame with 1 observation of 4 variables
+NULL
