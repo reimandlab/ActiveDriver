@@ -113,9 +113,9 @@ count_flanking_active_sites_in_sequence = function(pos, active_sites, f1, f2) {
 
 glm1 = function(form, data, type="poisson") {
 	if (type=="nb") {
-		return(MASS::glm.nb(as.formula(form), data=data))
+		return(MASS::glm.nb(stats::as.formula(form), data=data))
 	} else {
-		return(glm(as.formula(form), family=poisson, data=data))
+		return(stats::glm(stats::as.formula(form), family=stats::poisson, data=data))
 	}
 }
 
@@ -137,23 +137,23 @@ assess_one_region = function(r, active_site_regions, mut_pos, active_site_pos, d
 		h1_scope = paste("n_muts~", paste(collapse="+", setdiff(colnames(dfr), c("n_muts"))))
 		h1 = NULL
 		if (type=="nb") {
-			h1 = try(MASS::stepAIC(MASS::glm.nb(n_muts~dis, data=dfr), trace=0, direction="forward", scope=as.formula(h1_scope)), T)
+			h1 = try(MASS::stepAIC(MASS::glm.nb(n_muts~dis, data=dfr), trace=0, direction="forward", scope=stats::as.formula(h1_scope)), T)
 		} else {
-			h1 = try(MASS::stepAIC(glm(n_muts~dis, data=dfr, family=poisson), trace=0, direction="forward", scope=as.formula(h1_scope)), T)
+			h1 = try(MASS::stepAIC(stats::glm(n_muts~dis, data=dfr, family=stats::poisson), trace=0, direction="forward", scope=stats::as.formula(h1_scope)), T)
 		}
 	}
 	if (any(c(class(h0)[[1]], class(h1)[[1]])=="try-error")) {	
 		return(data.frame(p=NA, low=NA, med=NA, high=NA, obs=NA, stringsAsFactors=FALSE))
 	}
-	p = anova(h0, h1, test="Chisq")[2, ifelse(type=="nb", "Pr(Chi)", "Pr(>Chi)")]
-	h0_predicted_lambdas = predict(h0, type="response")[rr]
+	p = stats::anova(h0, h1, test="Chisq")[2, ifelse(type=="nb", "Pr(Chi)", "Pr(>Chi)")]
+	h0_predicted_lambdas = stats::predict(h0, type="response")[rr]
 	if (type=="nb") {
 		exp_sampled = replicate(1000, sum(MASS::rnegbin(length(h0_predicted_lambdas), mu=h0_predicted_lambdas, theta=h0$theta), na.rm=T))
 	} else {
-		exp_sampled = replicate(1000, sum(rpois(n=length(h0_predicted_lambdas), lambda=h0_predicted_lambdas)))
+		exp_sampled = replicate(1000, sum(stats::rpois(n=length(h0_predicted_lambdas), lambda=h0_predicted_lambdas)))
 	}
 	exp_mean = mean(exp_sampled)
-	exp_sd = sd(exp_sampled)
+	exp_sd = stats::sd(exp_sampled)
 	res = data.frame(p, low=exp_mean-exp_sd, med=exp_mean, high=exp_mean+exp_sd, obs=sum(n_muts[rr]), stringsAsFactors=FALSE)
 	rm(h0,h1,dfr)
 	gc()
@@ -245,40 +245,82 @@ merge_report = function(all_active_sites, all_active_regions, all_region_based_p
 }
 
 
+check_mutations_and_sites = function(seqs_to_check, muts_to_check, sites_to_check, genes_to_check) {
+  genes <- character()
+  for (i in 1:length(muts_to_check$gene)) {
+    if (muts_to_check$gene[i] %in% genes_to_check & !(muts_to_check$gene[i] %in% genes)) {
+      seq_to_check <- seqs_to_check[muts_to_check$gene[i]]
+      position <- muts_to_check$position[i]
+      if (muts_to_check$wt_residue[i] == substring(seq_to_check, position, position)) {
+        genes <- append(genes, muts_to_check$gene[i])
+      }
+    }
+  }
+  
+  for (i in 1:length(sites_to_check$gene)) {
+    if (sites_to_check$gene[i] %in% genes) {
+      seq_to_check <- seqs_to_check[sites_to_check$gene[i]]
+      position <- sites_to_check$position[i]
+      length <- nchar(sites_to_check$residue[i])
+      if (sites_to_check$residue[i] == substring(seq_to_check, position, position + length - 1)) {
+        return(TRUE)
+      }
+    }
+  }
+  
+  FALSE
+}
 
 
-#' Identification of active protein sites (post-translational modification sites, signalling domains, etc) with specific and significant mutations. 
+#' Identification of active protein sites (post-translational modification sites, signalling domains, etc) with
+#'     specific and significant mutations. 
 #'
 #' @param sequences character vector of protein sequences, names are protein IDs.
-#' @param seq_disorder character vector of disorder in protein sequences, names are protein IDs and values are strings 1/0 for disordered/ordered protein residues.
+#' @param seq_disorder character vector of disorder in protein sequences, names are protein IDs and values are strings
+#'     1/0 for disordered/ordered protein residues.
 #' @param mutations data frame of mutations, with [gene, sample_id, position, wt_residue, mut_residue] as columns.
-#' @param active_sites data frame of active sites, with [gene, position, residue, kinase] as columns. Kinase field may be blank and is shown for informative purposes.
-#' @param flank numeric for selecting region size around active sites considered important for site activity. Default is value is 7. Ignored in case of simplified analysis.
-#' @param mid_flank numeric for splitting flanking region size into proximal (<=X) and distal (>X). Default is value is 2. Ignored in case of simplified analysis.
+#' @param active_sites data frame of active sites, with [gene, position, residue, kinase] as columns. Kinase field may
+#'     be blank and is shown for informative purposes.
+#' @param flank numeric for selecting region size around active sites considered important for site activity. Default
+#'     value is 7. Ignored in case of simplified analysis.
+#' @param mid_flank numeric for splitting flanking region size into proximal (<=X) and distal (>X). Default value is
+#'     2. Ignored in case of simplified analysis.
 #' @param mc.cores numeric for indicating number of computing cores dedicated to computation. Default value is 1.
-#' @param simplified true/false for selecting simplified analysis. Default value is FALSE. If TRUE, no flanking regions are considered and only indicated sites are tested for mutations. 
-#' @param return_records true/false for returning a collection of gene records with more data regarding sites and mutations. Default value is FALSE.
-#' @param skip_mismatch true/false for skipping mutations whose reference protein residue does not match expected residue from FASTA sequence file. 
+#' @param simplified true/false for selecting simplified analysis. Default value is FALSE. If TRUE, no flanking regions
+#'     are considered and only indicated sites are tested for mutations. 
+#' @param return_records true/false for returning a collection of gene records with more data regarding sites and
+#'     mutations. Default value is FALSE.
+#' @param skip_mismatch true/false for skipping mutations whose reference protein residue does not match expected
+#'     residue from FASTA sequence file. 
 #' @param regression_type 'nb' for negative binomial, 'poisson' for poisson GLM. The latter is default.
-#' @param enriched_only true/false to indicate whether only sites with enriched active site mutations will be included in the final p-value estimation (TRUE is default). If FALSE, sites with less than expected mutations will be also included.
+#' @param enriched_only true/false to indicate whether only sites with enriched active site mutations will be included
+#'     in the final p-value estimation (TRUE is default). If FALSE, sites with less than expected mutations will be also
+#'     included.
 #'
-#' @return list with the following components:
-#' 	@return all_active_mutations - table with mutations that hit or flank an active site. Additional columns of interest include Status (DI - direct active mutation; N1 - proximal flanking mutation; N2 - distal flanking mutation) and Active_region (region ID of active sites in that protein).
+#' @return list with the following components: 
+#' 	@return all_active_mutations - table with mutations that hit or flank an active site. Additional columns of
+#'      interest include Status (DI - direct active mutation; N1 - proximal flanking mutation; N2 - distal flanking
+#'      mutation) and Active_region (region ID of active sites in that protein).
 #'	@return all_active_sites - 
-#'	@return all_region_based_pval - p-values for regions of sites, statistics on observed mutations (obs) and expected mutations (exp, low, high based on mean and s.d. from Poisson sampling). The field Region identifies region in all_active_sites.
+#'	@return all_region_based_pval - p-values for regions of sites, statistics on observed mutations (obs) and expected
+#'      mutations (exp, low, high based on mean and s.d. from Poisson sampling). The field Region identifies region in
+#'      all_active_sites.
 #	@return all_gene_based_fdr - gene-based uncorrected and FDR-corrected p-values aggregated over multiple sites.
-#	@return gene_records - if return_records is TRUE, a list of gene-based records is returned (large size). 
-#' @references Systematic analysis of somatic mutations in phosphorylation signaling predicts novel cancer drivers (2013, Molecular Systems Biology) by Jüri Reimand and Gary Bader.
+#	@return gene_records - if return_records is TRUE, a list of gene-based records is returned (large size).
+#' @references Systematic analysis of somatic mutations in phosphorylation signaling predicts novel cancer drivers
+#'     (2013, Molecular Systems Biology) by Juri Reimand and Gary Bader.
 #' @author  Juri Reimand <juri.reimand@@utoronto.ca>
 #' @examples
 #' data(ActiveDriver_data)
 #' phos_results = ActiveDriver(sequences, sequence_disorder, mutations, phosphosites)
-#' phos_results_ovarian = ActiveDriver(sequences, sequence_disorder, mutations[grep("ovarian", mutations$sample_id),], phosphosites) 
-#' kinase_domain_results = ActiveDriver(sequences, sequence_disorder, mutations, kinase_domains, simplified=TRUE)
-#' kinase_domain_results_GBM = ActiveDriver(sequences, sequence_disorder, mutations[grep("glioblastoma", mutations$sample_id),], kinase_domains, simplified=TRUE) 
+#' ovarian_mutations = mutations[grep("ovarian", mutations$sample_id),]
+#' phos_results_ovarian = ActiveDriver(sequences, sequence_disorder, ovarian_mutations, phosphosites)
+#' kin_results = ActiveDriver(sequences, sequence_disorder, mutations, kinase_domains, simplified=TRUE)
+#' GBM_muts = mutations[grep("glioblastoma", mutations$sample_id),]
+#' kin_rslt_GBM = ActiveDriver(sequences, sequence_disorder, GBM_muts, kinase_domains, simplified=TRUE)
 #' @export
 
-ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank=7, mid_flank=2, mc.cores=1, simplified=FALSE, return_records=FALSE, skip_mismatch=TRUE, regression_type="poisson", enriched_only=TRUE) {
+ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank = 7, mid_flank = 2, mc.cores = 1, simplified = FALSE, return_records = FALSE, skip_mismatch = TRUE, regression_type = "poisson", enriched_only = TRUE) {
 	
 	# first initiate mutation counts if needed
 	if(is.null(mutations$count)) {mutations$count=1}
@@ -292,11 +334,23 @@ ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank=
 	mutations$position = as.numeric(mutations$position)
 	active_sites$position = as.numeric(active_sites$position)
 	
+	# ensure case is uniform
+	mutations$wt_residue = toupper(mutations$wt_residue)
+	mutations$mut_residue = toupper(mutations$mut_residue)
+	active_sites$residue = toupper(active_sites$residue)
+	sequences = toupper(sequences)
+	
 	genes_to_test = Reduce(intersect, list(mutations$gene, active_sites$gene, names(sequences), names(seq_disorder)))
 	if (length(genes_to_test)<1) { 
 		cat("Error: no genes matched in tables for mutations, active sites and sequences\n"); 
-		NULL
+		return(NULL)
 	}
+	# check if mutation and active site wt residues match with reference sequences
+	if (check_mutations_and_sites(sequences, mutations, active_sites, genes_to_test) == FALSE) {
+	  cat("Error: wildtype residues do not match reference sequences\n")
+	  return(NULL)
+	}
+	
 	cat("genes:", length(genes_to_test))
 	gene_records = parallel::mclapply(genes_to_test, create_gene_record, 
 			sequences, mutations, active_sites, seq_disorder, flank=flank, mid_flank=mid_flank, 
@@ -308,7 +362,7 @@ ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank=
 			if(!is.null(gr$total_mutation_significance[[1]])) 
 				data.frame(gene=gr$gene, gr$total_mutation_significance, stringsAsFactors=FALSE)))
 	if (!is.null(all_gene_based_fdr[[1]])) {
-		all_gene_based_fdr$fdr = p.adjust(all_gene_based_fdr$fdr, method="fdr")
+		all_gene_based_fdr$fdr = stats::p.adjust(all_gene_based_fdr$fdr, method="fdr")
 		# update fdr values in gene records
 		for (i in 1:nrow(all_gene_based_fdr)) {
 			gene_records[[as.character(all_gene_based_fdr[i, "gene"])]]$total_mutation_significance[,"fdr"] = all_gene_based_fdr[i,"fdr"]
@@ -336,3 +390,80 @@ ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank=
 	results
 }
 
+
+#' Example protein sequences for ActiveDriver
+#'
+#' A dataset containing the sequences of four proteins.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name sequences
+#' @usage data(ActiveDriver_data)
+#' @format A named character vector with 4 elements
+NULL
+
+#' Example protein disorder for ActiveDriver
+#'
+#' A dataset containing the disorder of four proteins.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name sequence_disorder
+#' @usage data(ActiveDriver_data)
+#' @format A named character vector with 4 elements
+NULL
+
+#' Example mutations for ActiveDriver
+#'
+#' A dataset describing mutations. The variables are as follows:
+#'
+#' \itemize{
+#'   \item gene. the mutated gene
+#'   \item sample_id. the sample where the mutation originates
+#'   \item position. the position in the protein sequence where the mutation occurs
+#'   \item wt_residue. the wild-type residue
+#'   \item mut_residue. the mutant residue
+#' }
+#'
+#' @docType data
+#' @keywords datasets
+#' @name mutations
+#' @usage data(ActiveDriver_data)
+#' @format A data frame with 408 observations of 5 variables
+NULL
+
+#' Example phosphosites for ActiveDriver
+#'
+#' A dataset describing phosphosites. The variables are as follows:
+#'
+#' \itemize{
+#'   \item gene. the gene the phosphosite occurs in
+#'   \item position. the position in the protein sequence where the phosphosite occurs
+#'   \item residue. the phosphosite residue
+#'   \item kinase. the kinase that phosphorylated this site
+#' }
+#'
+#' @docType data
+#' @keywords datasets
+#' @name phosphosites
+#' @usage data(ActiveDriver_data)
+#' @format A data frame with 131 observations of 4 variables
+NULL
+
+#' Example kinase domains for ActiveDriver
+#'
+#' A dataset describing kinase domains. The variables are as follows:
+#'
+#' \itemize{
+#'   \item gene. the gene the kinase domain occurs in
+#'   \item position. the position in the protein sequence where the kinase domain begins
+#'   \item phos. TRUE
+#'   \item residue. the kinase domain residues
+#' }
+#'
+#' @docType data
+#' @keywords datasets
+#' @name kinase_domains
+#' @usage data(ActiveDriver_data)
+#' @format A data frame with 1 observation of 4 variables
+NULL

@@ -1,0 +1,10 @@
+Package: ActiveDriver
+Version: 0.0.11
+License: GPL (>= 2)
+Description: A mutation analysis tool that discovers cancer driver genes with frequent mutations in protein signalling sites such as post-translational modifications (phosphorylation, ubiquitination, etc). The model identifies genes where cancer mutations in signalling sites are more frequent than expected from the sequence of the entire gene. Integration of mutations with signalling information helps find new driver genes and propose candidate mechanisms to known drivers. ActiveDriver is a generalised linear regression model that is available as an R package.
+Title: A Computational Method for Finding Significantly Mutated Protein Sites (Phosphorylation Sites, Signalling Domains, Etc) from Cancer Genomics Data
+Authors@R: person("Juri", "Reimand", email = "juri.reimand@utoronto.ca", role = c("aut", "cre"))
+Depends: R (>= 3.0)
+Imports: stats, parallel, MASS
+Collate: 'ActiveDriver.R'
+RoxygenNote: 6.0.1
