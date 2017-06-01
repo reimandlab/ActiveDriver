@@ -313,11 +313,13 @@ check_mutations_and_sites = function(seqs_to_check, muts_to_check, sites_to_chec
 #' @examples
 #' data(ActiveDriver_data)
 #' phos_results = ActiveDriver(sequences, sequence_disorder, mutations, phosphosites)
+#' \donttest{
 #' ovarian_mutations = mutations[grep("ovarian", mutations$sample_id),]
 #' phos_results_ovarian = ActiveDriver(sequences, sequence_disorder, ovarian_mutations, phosphosites)
 #' kin_results = ActiveDriver(sequences, sequence_disorder, mutations, kinase_domains, simplified=TRUE)
 #' GBM_muts = mutations[grep("glioblastoma", mutations$sample_id),]
 #' kin_rslt_GBM = ActiveDriver(sequences, sequence_disorder, GBM_muts, kinase_domains, simplified=TRUE)
+#' }
 #' @export
 
 ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank = 7, mid_flank = 2, mc.cores = 1, simplified = FALSE, return_records = FALSE, skip_mismatch = TRUE, regression_type = "poisson", enriched_only = TRUE) {
