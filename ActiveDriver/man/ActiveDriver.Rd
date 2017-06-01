@@ -61,9 +61,9 @@ Identification of active protein sites (post-translational modification sites, s
     specific and significant mutations.
 }
 \examples{
+\donttest{
 data(ActiveDriver_data)
 phos_results = ActiveDriver(sequences, sequence_disorder, mutations, phosphosites)
-\donttest{
 ovarian_mutations = mutations[grep("ovarian", mutations$sample_id),]
 phos_results_ovarian = ActiveDriver(sequences, sequence_disorder, ovarian_mutations, phosphosites)
 kin_results = ActiveDriver(sequences, sequence_disorder, mutations, kinase_domains, simplified=TRUE)
