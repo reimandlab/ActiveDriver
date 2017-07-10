@@ -417,7 +417,7 @@ NULL
 
 #' Example mutations for ActiveDriver
 #'
-#' A dataset describing mutations. The variables are as follows:
+#' A dataset describing mis-sense mutations (i.e., substitutions in proteins). The variables are as follows:
 #'
 #' \itemize{
 #'   \item gene. the mutated gene
@@ -436,13 +436,13 @@ NULL
 
 #' Example phosphosites for ActiveDriver
 #'
-#' A dataset describing phosphosites. The variables are as follows:
+#' A dataset describing protein phosphorylation sites. The variables are as follows:
 #'
 #' \itemize{
-#'   \item gene. the gene the phosphosite occurs in
+#'   \item gene. the gene symbol the phosphosite occurs in
 #'   \item position. the position in the protein sequence where the phosphosite occurs
 #'   \item residue. the phosphosite residue
-#'   \item kinase. the kinase that phosphorylated this site
+#'   \item kinase. the kinase that phosphorylates this site
 #' }
 #'
 #' @docType data
@@ -457,7 +457,7 @@ NULL
 #' A dataset describing kinase domains. The variables are as follows:
 #'
 #' \itemize{
-#'   \item gene. the gene the kinase domain occurs in
+#'   \item gene. the gene symbol of the gene where the kinase domain occurs
 #'   \item position. the position in the protein sequence where the kinase domain begins
 #'   \item phos. TRUE
 #'   \item residue. the kinase domain residues
