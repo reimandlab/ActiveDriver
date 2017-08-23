@@ -9,14 +9,14 @@
 data(ActiveDriver_data)
 }
 \description{
-A dataset describing phosphosites. The variables are as follows:
+A dataset describing protein phosphorylation sites. The variables are as follows:
 }
 \details{
 \itemize{
-  \item gene. the gene the phosphosite occurs in
+  \item gene. the gene symbol the phosphosite occurs in
   \item position. the position in the protein sequence where the phosphosite occurs
   \item residue. the phosphosite residue
-  \item kinase. the kinase that phosphorylated this site
+  \item kinase. the kinase that phosphorylates this site
 }
 }
 \keyword{datasets}

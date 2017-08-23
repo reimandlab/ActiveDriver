@@ -13,7 +13,7 @@ A dataset describing kinase domains. The variables are as follows:
 }
 \details{
 \itemize{
-  \item gene. the gene the kinase domain occurs in
+  \item gene. the gene symbol of the gene where the kinase domain occurs
   \item position. the position in the protein sequence where the kinase domain begins
   \item phos. TRUE
   \item residue. the kinase domain residues

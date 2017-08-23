@@ -9,7 +9,7 @@
 data(ActiveDriver_data)
 }
 \description{
-A dataset describing mutations. The variables are as follows:
+A dataset describing mis-sense mutations (i.e., substitutions in proteins). The variables are as follows:
 }
 \details{
 \itemize{
