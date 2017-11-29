@@ -202,17 +202,22 @@ create_gene_record = function(gene, fasta, mut, pho, disorder, flank=7, mid_flan
 		colnames(l$active_region_summary)[3:4] = c("pos0", "pos1")
 	}
 	
-	if (!is.null(l$mutations_per_position[[1]]) & !is.null(l$active_sites_in_sequence[[1]])) {	
-		l$region_mutation_significance = 
-			assess_all_regions(l$active_regions, l$mutations_per_position, l$active_sites_in_sequence, l$disorder, flank, mid_flank, simplified, all_sites_together, type=type)
-		tot = prod(l$region_mutation_significance[l$region_mutation_significance$p<0.05, "p"], na.rm=T)
-		if (enriched_only) {
-			tot = prod(l$region_mutation_significance[l$region_mutation_significance$p<0.05 & l$region_mutation_significance$obs>l$region_mutation_significance$med, "p"], na.rm=T)
+	if (!is.null(l$mutations_per_position[[1]]) & !is.null(l$active_sites_in_sequence[[1]])) {
+		if (length(l$disorder) != nchar(l$protein_sequence)) {
+			cat("warning: disorder length (", length(l$disorder), ") is different than sequence length (", nchar(l$protein_sequence), ") for gene", gene, "; skipping\n")
 		}
-		l$total_mutation_significance = data.frame(p=tot, fdr=tot)
-		l$active_sites_input$active_region = l$active_regions[l$active_sites_input$position]	
-		l$mutations_input$active_region = l$active_regions[l$mutations_input$position]
-	} 
+		else {
+			l$region_mutation_significance =
+				assess_all_regions(l$active_regions, l$mutations_per_position, l$active_sites_in_sequence, l$disorder, flank, mid_flank, simplified, all_sites_together, type=type)
+			tot = prod(l$region_mutation_significance[l$region_mutation_significance$p<0.05, "p"], na.rm=T)
+			if (enriched_only) {
+				tot = prod(l$region_mutation_significance[l$region_mutation_significance$p<0.05 & l$region_mutation_significance$obs>l$region_mutation_significance$med, "p"], na.rm=T)
+			}
+			l$total_mutation_significance = data.frame(p=tot, fdr=tot)
+			l$active_sites_input$active_region = l$active_regions[l$active_sites_input$position]
+			l$mutations_input$active_region = l$active_regions[l$mutations_input$position]
+		}
+	}
 	cat(".")
 	gc()
 	l
