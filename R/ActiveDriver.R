@@ -303,6 +303,8 @@ check_mutations_and_sites = function(seqs_to_check, muts_to_check, sites_to_chec
 #' @param enriched_only true/false to indicate whether only sites with enriched active site mutations will be included
 #'     in the final p-value estimation (TRUE is default). If FALSE, sites with less than expected mutations will be also
 #'     included.
+#' @param progress_bar true/false to indicate whether a progress bar should be displayed. Default value is FALSE.
+#'     Requires pbmcapply.
 #'
 #' @return list with the following components: 
 #' 	@return all_active_mutations - table with mutations that hit or flank an active site. Additional columns of
