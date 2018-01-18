@@ -169,7 +169,7 @@ assess_all_regions = function(active_site_regions, mut_pos, active_site_pos, dis
 }
 
 
-create_gene_record = function(gene, fasta, mut, pho, disorder, flank=7, mid_flank=2, simplified=FALSE, all_sites_together=FALSE, skip_mismatch=TRUE, type="poisson", enriched_only=TRUE) {
+create_gene_record = function(gene, fasta, mut, pho, disorder, flank=7, mid_flank=2, simplified=FALSE, all_sites_together=FALSE, skip_mismatch=TRUE, type="poisson", enriched_only=TRUE, show_progress=TRUE) {
 	l = list()
 	l$gene = gene
 	l$protein_sequence = fasta[[gene]]
@@ -218,7 +218,9 @@ create_gene_record = function(gene, fasta, mut, pho, disorder, flank=7, mid_flan
 			l$mutations_input$active_region = l$active_regions[l$mutations_input$position]
 		}
 	}
-	cat(".")
+	if (show_progress) {
+		cat(".")
+	}
 	gc()
 	l
 }
@@ -327,7 +329,7 @@ check_mutations_and_sites = function(seqs_to_check, muts_to_check, sites_to_chec
 #' kin_results = ActiveDriver(sequences, sequence_disorder, mutations, kinase_domains, simplified=TRUE)
 #' @export
 
-ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank = 7, mid_flank = 2, mc.cores = 1, simplified = FALSE, return_records = FALSE, skip_mismatch = TRUE, regression_type = "poisson", enriched_only = TRUE) {
+ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank = 7, mid_flank = 2, mc.cores = 1, simplified = FALSE, return_records = FALSE, skip_mismatch = TRUE, regression_type = "poisson", enriched_only = TRUE, progress_bar = FALSE) {
 	
 	# first initiate mutation counts if needed
 	if(is.null(mutations$count)) {mutations$count=1}
@@ -359,9 +361,18 @@ ActiveDriver = function(sequences, seq_disorder, mutations, active_sites, flank 
 	}
 	
 	cat("genes:", length(genes_to_test))
-	gene_records = parallel::mclapply(genes_to_test, create_gene_record, 
+
+	if(progress_bar) {
+		mclapply = pbmcapply::pbmclapply
+	}
+	else {
+		mclapply = parallel::mclapply
+	}
+
+	gene_records = mclapply(genes_to_test, create_gene_record,
 			sequences, mutations, active_sites, seq_disorder, flank=flank, mid_flank=mid_flank, 
-			mc.cores=mc.cores, simplified=simplified, skip_mismatch=skip_mismatch, type=regression_type, enriched_only=enriched_only, mc.preschedule=F)
+			mc.cores=mc.cores, simplified=simplified, skip_mismatch=skip_mismatch, type=regression_type,
+			enriched_only=enriched_only, mc.preschedule=F, show_progress=!progress_bar)
 	names(gene_records) = sapply(gene_records, '[[', 'gene')
 	
 	all_gene_based_fdr = do.call("rbind", 
